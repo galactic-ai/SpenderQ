@@ -8,30 +8,35 @@ import numpy as np
 from . import util as U
 
 
-def identify_LyA(wobs, fobs, iobs, zobs, wmod, fmod, sigma=1.5, wmax=None, method='rebin', verbose=False):
+def identify_absorp(wobs, fobs, iobs, zobs, wmod, fmod, sigma_lya=1.5, sigma_lyb=1.5, wave_lya=1215.67, wave_lyb=1026., method='rebin', verbose=False):
     ''' identify wavelengths with LyA absorption based on a reconstructed spectra.
     '''
-    if wmax is None: 
-        wmax = 1215.67 * (1. + zobs) # observed wavelength of LyA
-
+    w_lya = wave_lya * (1. + zobs) # observed wavelength of LyA
+    w_lyb = wave_lyb * (1. + zobs) # observed wavelength of LyB
 
     if method == 'rebin':
         # identify LyA regions after rebinning the observed spectra to 4A
         w_coarse, fobs_coarse, iobs_coarse, fmod_coarse = rebin(wobs, fobs, iobs, zobs, wmod, fmod, 
-                method='fixed', wmax=wmax, verbose=verbose)
+                method='fixed', wmax=w_lya, verbose=verbose)
     elif method == 'snr_rebin': 
         # identify LyA regions after rebinning the observed spectra based on SNR
         w_coarse, fobs_coarse, iobs_coarse, fmod_coarse = rebin(wobs, fobs, iobs, zobs, wmod, fmod, 
-                method='uniform', wmax=wmax, verbose=verbose)
+                method='uniform', wmax=w_lya, verbose=verbose)
     else:
         raise NotImplementedError
-
+    
+    # above LyA 
     is_absorb_coarse = np.zeros(len(fobs_coarse)).astype(bool)
-    # below LyA
-    below_lya = (w_coarse[1:] < wmax) # right edge of spectral element is less wmax
-    is_absorb_coarse[below_lya] = (fmod_coarse[below_lya] - fobs_coarse[below_lya] > sigma * iobs_coarse[below_lya]**-0.5)
-    # above LyA (more conservative 3 sigma clipping)
-    is_absorb_coarse[~below_lya] = (fmod_coarse[~below_lya] - fobs_coarse[~below_lya] > 3 * iobs_coarse[~below_lya]**-0.5)
+    above_lya = (w_coarse[:-1] > w_lya) 
+    is_absorb_coarse[above_lya] = (fmod_coarse[above_lya] - fobs_coarse[above_lya] > 3 * iobs_coarse[above_lya]**-0.5)
+    
+    # LyA range
+    lya_range = (w_coarse[:-1] > w_lyb) & (w_coarse[1:] < w_lya)
+    is_absorb_coarse[lya_range] = (fmod_coarse[lya_range] - fobs_coarse[lya_range] > sigma_lya * iobs_coarse[lya_range]**-0.5)
+
+    # LyB range 
+    lyb_range = (w_coarse[:-1] < w_lyb)
+    is_absorb_coarse[lyb_range] = (fmod_coarse[lyb_range] - fobs_coarse[lyb_range] > sigma_lyb * iobs_coarse[lyb_range]**-0.5)
 
     i_coarse = np.digitize(wobs, w_coarse, right=False) - 1
     
