@@ -18,7 +18,10 @@ if __name__ == "__main__":
     parser.add_argument("-ti", "--input_tag", help="input data tag", type=str, default='')
     parser.add_argument("-to", "--output_tag", help="output data tag", type=str, default='')
     parser.add_argument("-i", "--ibatch", help="batch number", type=int, default=None)
-    parser.add_argument("-sigma", "--sigma", help="sigma, for clipping", type=float, default=1.5)
+    parser.add_argument("--sigma_lya", help="sigma, for clipping LyA", type=float, default=1.5)
+    parser.add_argument("--sigma_lyb", help="sigma, for clipping LyB", type=float, default=1.5)
+    parser.add_argument("--wave_lya", help="wavelength for LyA range upper bound", type=float, default=1215.67)
+    parser.add_argument("--wave_lyb", help="wavelength for LyB range lower bound", type=float, default=1026.00)
     args = parser.parse_args()
     
     # load model 
@@ -37,13 +40,18 @@ if __name__ == "__main__":
         
     for igal in np.arange(spec.shape[0]): 
         # identify LyA absorption
-        is_absorb = LyA.identify_LyA(
+        is_absorb = LyA.identify_absorp(
             np.array(models[0].wave_obs), 
             np.array(spec[igal]), 
             np.array(w[igal]), 
             np.array(z)[igal], 
             np.array(models[0].wave_rest * (1 + z[igal])), 
-            np.array(recon[igal]), sigma=args.sigma)
+            np.array(recon[igal]), 
+            sigma_lya=args.sigma_lya,
+            sigma_lyb=args.sigma_lyb, 
+            wave_lya=args.wave_lya,
+            wave_lyb=args.wave_lyb, 
+            method='snr_rebin')
         
         # update weights
         w[igal,is_absorb] = 0.
