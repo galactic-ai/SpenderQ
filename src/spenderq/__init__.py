@@ -38,7 +38,7 @@ def load_model(filename, instruments=None, latents=10, z_min=2.1, z_max=3.5, bin
               for instrument in instruments ]
 
     device = instruments[0].wave_obs.device
-    model_struct = torch.load(filename, map_location=device)
+    model_struct = torch.load(filename, weights_only=False, map_location=device)
     
     for i, model in enumerate(models):
         # backwards compat: encoder.mlp instead of encoder.mlp.mlp

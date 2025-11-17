@@ -5,6 +5,7 @@ methods for identifying LyA absorption
 
 '''
 import numpy as np 
+from numba import jit 
 from . import util as U
 
 
@@ -108,3 +109,4 @@ def wrebin_uniform(wobs, fobs, iobs, zobs, wmax=None):
     Nbin = int(((wobs[-1] - wobs[0]) + 0.8)/dw)
     w_coarse = np.linspace(wobs[0]-0.4, wobs[-1]+0.4, Nbin)
     return w_coarse
+
